@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIC Proveedores — Grupo JAKA · Abril 2026</title>
+<style>/* System font stack - no external dependencies */</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f3; --surface: #ffffff; --surface2: #f0efe9; --border: #e2e0d8;
+    --text: #1a1916; --text2: #6b6960; --text3: #9e9c94;
+    --pos: #2d6a1f; --pos-bg: #eaf3e0; --neg: #922020; --neg-bg: #fceaea;
+    --warn: #7a4a0a; --warn-bg: #fdf0d8; --neu: #4a4945; --neu-bg: #ededea;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-left { display: flex; align-items: baseline; gap: 16px; }
+  .header-title { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-period { font-size: 13px; color: var(--text2); font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Courier New', monospace; background: var(--surface2); padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  .header-right { font-size: 12px; color: var(--text3); }
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; overflow-x: auto; }
+  .nav-btn { padding: 14px 20px; font-size: 13px; font-weight: 400; color: var(--text2); border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; transition: color 0.15s; }
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active { color: var(--text); font-weight: 500; border-bottom-color: var(--text); }
+  .main { padding: 32px 40px; max-width: 1200px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .section-title { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 16px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .kpi-label { font-size: 11px; color: var(--text3); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
+  .kpi-value { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; line-height: 1; margin-bottom: 4px; }
+  .kpi-sub { font-size: 11px; color: var(--text3); }
+  .kpi.highlight { background: var(--text); border-color: var(--text); }
+  .kpi.highlight .kpi-label, .kpi.highlight .kpi-sub { color: rgba(255,255,255,0.5); }
+  .kpi.highlight .kpi-value { color: #fff; }
+  .kpi.accent { background: var(--warn-bg); border-color: #e8c980; }
+  .kpi.accent .kpi-label { color: #a07020; }
+  .kpi.accent .kpi-value { color: var(--warn); }
+  .kpi.accent .kpi-sub { color: #b08030; }
+  .pos-val { color: var(--pos); } .neg-val { color: var(--neg); } .warn-val { color: var(--warn); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px; }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .card-sub { font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+  .chart-wrap { position: relative; width: 100%; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .pie-col { display: grid; grid-template-columns: 1fr 1.1fr; gap: 20px; margin-bottom: 20px; align-items: start; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; font-size: 12px; color: var(--text2); }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .pill { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; cursor: pointer; background: var(--surface); color: var(--text2); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  .pill:hover { background: var(--surface2); }
+  .pill.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .tbl-wrap { overflow-x: auto; }
+  table.pic-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.pic-table th { text-align: left; padding: 8px 10px; font-weight: 500; color: var(--text3); border-bottom: 1px solid var(--border); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
+  table.pic-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  table.pic-table tr:last-child td { border-bottom: none; }
+  table.pic-table tr:hover td { background: var(--surface2); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 500; }
+  .badge.pos { background: var(--pos-bg); color: var(--pos); }
+  .badge.neg { background: var(--neg-bg); color: var(--neg); }
+  .badge.warn { background: var(--warn-bg); color: var(--warn); }
+  .badge.neu { background: var(--neu-bg); color: var(--neu); }
+  .heat-container { overflow-x: auto; }
+  .heat-headers { display: flex; margin-left: 150px; gap: 2px; margin-bottom: 3px; }
+  .heat-hcell { width: 38px; flex-shrink: 0; font-size: 9px; color: var(--text3); text-align: center; font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Courier New', monospace; }
+  .heat-row { display: flex; align-items: center; gap: 2px; margin-bottom: 2px; }
+  .heat-label { min-width: 150px; font-size: 11px; color: var(--text2); text-align: right; padding-right: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .heat-cell { width: 38px; height: 30px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; border-radius: 3px; font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Courier New', monospace; }
+  .pie-legend { display: flex; flex-direction: column; gap: 7px; justify-content: center; }
+  .pie-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .pie-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .pie-legend-name { flex: 1; color: var(--text2); }
+  .pie-legend-pct { font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Courier New', monospace; font-size: 12px; font-weight: 500; color: var(--text); }
+  @media (max-width: 700px) {
+    .main { padding: 20px 16px; } .header { padding: 14px 16px; } .nav { padding: 0 16px; }
+    .two-col, .pie-col { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <span class="header-title">PIC Proveedores</span>
+    <span class="header-period">Mar → Abr 2026</span>
+  </div>
+  <div class="header-right">Grupo JAKA · Depto. Compras</div>
+</header>
+
+<nav class="nav">
+  <button class="nav-btn active" data-panel="mes">Mes cerrado</button>
+  <button class="nav-btn" data-panel="historico">Evolución histórica</button>
+  <button class="nav-btn" data-panel="categorias">Por categoría</button>
+  <button class="nav-btn" data-panel="diagnostico">Diagnóstico estratégico</button>
+</nav>
+
+<main class="main">
+
+  <!-- PANEL 1: MES CERRADO -->
+  <section id="panel-mes" class="panel active">
+    <p class="section-title">Resumen del período · Mar → Abr 2026</p>
+    <div class="kpi-grid" id="kpi-mes"></div>
+    <div class="pie-col">
+      <div class="card">
+        <p class="card-title">Variación PIC por categoría</p>
+        <p class="card-sub">Ordenado de mayor a menor — Mar → Abr 2026</p>
+        <div class="chart-wrap" style="height:400px">
+          <canvas id="c-catmes" role="img" aria-label="Variación PIC por categoría Mar-Abr 2026"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title">Representatividad de compra por categoría</p>
+        <p class="card-sub">Participación % sobre el total — Abr 2026</p>
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="c-pie" role="img" aria-label="Representatividad de compra por categoría abril 2026"></canvas>
+        </div>
+        <div class="pie-legend" id="pie-legend" style="margin-top:16px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2: HISTÓRICO -->
+  <section id="panel-historico" class="panel">
+    <p class="section-title">Evolución histórica · Ene 2025 — Abr 2026</p>
+    <div class="card">
+      <p class="card-title">PIC total mensual</p>
+      <p class="card-sub">Índice de precios de compra — variación período a período</p>
+      <div class="legend-row">
+        <span class="legend-item"><span class="legend-dot" style="background:#1a6ab0"></span>Sube</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#a32d2d"></span>Baja</span>
+      </div>
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="c-hist" role="img" aria-label="PIC total mensual 2025-2026"></canvas>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <p class="card-title">Comparativa anual — períodos equivalentes</p>
+        <p class="card-sub">2025 vs 2026 (misma posición en el año)</p>
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-dot" style="background:#1a6ab0"></span>2025</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#d85a30"></span>2026</span>
+        </div>
+        <div class="chart-wrap" style="height:240px">
+          <canvas id="c-anual" role="img" aria-label="Comparativa anual PIC"></canvas>
+        </div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:center;">
+        <p class="card-title" style="margin-bottom:16px">Acumulados</p>
+        <div style="display:flex;flex-direction:column;gap:12px" id="acum-boxes"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 3: POR CATEGORÍA -->
+  <section id="panel-categorias" class="panel">
+    <p class="section-title">PIC por categoría · seleccioná el período</p>
+    <div class="card">
+      <p class="card-title">Variación de categorías por período</p>
+      <div class="pill-row" id="period-pills"></div>
+      <div class="chart-wrap" style="height:400px">
+        <canvas id="c-catperiod" role="img" aria-label="PIC por categoría en período seleccionado"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <p class="card-title">Mapa de calor completo</p>
+      <p class="card-sub">PIC por categoría y período — rojo sube, verde baja</p>
+      <div class="heat-container" id="heatmap"></div>
+    </div>
+  </section>
+
+  <!-- PANEL 4: DIAGNÓSTICO -->
+  <section id="panel-diagnostico" class="panel">
+    <p class="section-title">Diagnóstico estratégico · Ene 2025 — Abr 2026</p>
+    <div class="two-col">
+      <div class="card">
+        <p class="card-title">Volatilidad por categoría</p>
+        <p class="card-sub">Desviación estándar del PIC en 15 períodos</p>
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-dot" style="background:#a32d2d"></span>Alta</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#ba7517"></span>Media</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#1a6ab0"></span>Baja</span>
+        </div>
+        <div class="chart-wrap" style="height:400px">
+          <canvas id="c-vol" role="img" aria-label="Volatilidad por categoría"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title">PIC acumulado por categoría</p>
+        <p class="card-sub">Suma de variaciones en 15 períodos</p>
+        <div class="chart-wrap" style="height:400px">
+          <canvas id="c-acum" role="img" aria-label="PIC acumulado por categoría"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <p class="card-title">Perfil de consistencia por categoría</p>
+      <p class="card-sub">Cuántos períodos subió, bajó o se mantuvo cada categoría</p>
+      <div class="tbl-wrap" id="tbl-consist"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ---- DATOS ACTUALIZADOS ABR 2026 (15 períodos) ----
+const CATS = ['VERDULERIA','CARNES','AVICOLA','CAFETERIA','PESCA','LIMPIEZA','BEBIDAS','PANADERIA','ALMACEN','QUESOS Y FIAMBRES','PASTELERIA','LACTEOS','DESCARTABLES','SEMIELABORADOS','MARKET','VAJILLA'];
+
+const CAT_PIC = {
+  'DESCARTABLES':       [-5,-4,-4, 1, 0, 1,-1,-2, 2,-0.4, 2.2, 0.9, 3.0, 0.8, 8.3],
+  'AVICOLA':            [-2, 9, 3,11, 3, 3,-2, 0,-2,-3.0,-4.6,-4.4, 8.2, 3.5, 0.1],
+  'ALMACEN':            [ 3, 2, 2, 3, 0,-5,-1,-1, 4, 1.2,-0.8, 0.5,-0.3, 2.8,-0.5],
+  'PASTELERIA':         [ 1, 1, 5, 1,-1, 2, 2, 1, 0, 1.0, 0.7, 2.6, 0.1, 0.1, 4.2],
+  'PANADERIA':          [ 1, 3, 0, 1,-2, 1, 0,-4, 1, 1.0, 3.4, 2.0, 0.0, 4.4, 0.0],
+  'LACTEOS':            [ 0,-1, 0, 1, 2,-9, 1, 0, 0,-1.1,-1.0, 0.2, 5.2, 1.2, 4.8],
+  'BEBIDAS':            [ 3, 0, 5, 1, 0, 2, 2,-1, 5, 0.0, 0.4,-4.9, 2.4, 2.8,-2.1],
+  'LIMPIEZA':           [ 0, 0,-2, 0, 0, 1,-1, 0, 0,10.4, 0.0, 2.8, 0.0, 8.3, 4.3],
+  'PESCA':              [-1, 0, 0,-1, 0, 1, 2, 4, 3, 3.0, 3.0, 9.4,-1.8, 0.9, 1.4],
+  'QUESOS Y FIAMBRES':  [ 0, 3, 2, 0, 0,-3, 0, 0, 0, 1.3, 1.3, 1.1, 1.1, 3.4, 2.1],
+  'VERDULERIA':         [-4,13, 4,-6, 0, 0, 2, 6, 0, 1.3, 2.3, 6.2,-3.4, 1.3,-2.5],
+  'VAJILLA':            [ 0, 3, 0, 0, 0, 1, 1, 0, 2, 0.8,-13.8,0.0, 0.0, 0.0, 0.0],
+  'CAFETERIA':          [ 7, 1, 2, 6,10, 1, 6,-2, 6, 4.8, 3.1, 6.9, 0.3, 0.4,-0.1],
+  'SEMIELABORADOS':     [ 0, 0, 6, 4, 1, 2, 1, 0, 1, 1.6, 0.5, 3.3, 0.2,-1.3, 4.0],
+  'MARKET':             [ 4, 1, 5, 0, 0, 2, 5, 2, 1, 2.2, 0.1, 0.0, 6.0, 0.0, 1.2],
+  'CARNES':             [ 6, 5, 8, 2, 0,-3, 4,-3,-1,11.8, 9.3,-4.2, 9.1, 9.9,-0.2]
+};
+
+const PERIODS   = ['Ene→Feb','Feb→Mar','Mar→Abr','Abr→May','May→Jun','Jun→Jul','Jul→Ago','Ago→Sep','Sep→Oct','Oct→Nov','Nov→Dic','Dic→Ene','Ene→Feb','Feb→Mar','Mar→Abr'];
+const PERYEARS  = ['25','25','25','25','25','25','25','25','25','25','25','26','26','26','26'];
+const PIC_TOTAL = [-0.10,2.70,1.72,0.53,0.36,-0.73,0.79,0.76,1.18,1.32,1.09,2.47,0.65,2.33,0.79];
+
+// Acumulado últimos 12 meses: Abr25→Abr26 = períodos índices 3..14
+const ACUM12 = PIC_TOTAL.slice(3).reduce((a,b)=>a+b,0).toFixed(2); // 11.54
+
+const GC='#e2e0d8', TC='#9e9c94';
+
+// ---- PIE: representatividad Abr 2026 (PXQ Abr 2026) ----
+// Calculado internamente desde el archivo; solo se muestra el %
+const pxqAbr = {
+  'VERDULERIA':        213000000,
+  'PESCA':             184000000,
+  'ALMACEN':           138700000,
+  'QUESOS Y FIAMBRES':  85400000,
+  'AVICOLA':            94200000,
+  'PANADERIA':          76300000,
+  'BEBIDAS':            63900000,
+  'CARNES':             56500000,
+  'PASTELERIA':         60800000,
+  'LACTEOS':            56600000,
+  'DESCARTABLES':       87400000,
+  'CAFETERIA':          32500000,
+  'SEMIELABORADOS':      8300000,
+  'MARKET':              3540000,
+  'VAJILLA':            11970000,
+  'LIMPIEZA':           14940000
+};
+const totalPxq = Object.values(pxqAbr).reduce((a,b)=>a+b,0);
+const pieOrder = Object.entries(pxqAbr).sort((a,b)=>b[1]-a[1]);
+const pieLabels = pieOrder.map(x=>x[0]);
+const piePcts   = pieOrder.map(x=>parseFloat((x[1]/totalPxq*100).toFixed(1)));
+
+const PIE_COLORS = ['#1a6ab0','#d85a30','#3b6d11','#854f0b','#6b3fa0','#1D9E75','#ba7517','#922020','#2d6a1f','#4a7fa5','#c2693a','#5a3e8a','#7a9e3b','#4a4945','#c9a227','#5e8c6a'];
+
+new Chart(document.getElementById('c-pie'),{
+  type:'doughnut',
+  data:{ labels:pieLabels, datasets:[{data:piePcts,backgroundColor:PIE_COLORS,borderWidth:1,borderColor:'#fff',hoverOffset:6}] },
+  options:{ responsive:true,maintainAspectRatio:false,cutout:'55%',
+    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.label+': '+c.parsed.toFixed(1)+'%'}} } }
+});
+document.getElementById('pie-legend').innerHTML = pieLabels.map((l,i)=>
+  `<div class="pie-legend-item"><div class="pie-legend-dot" style="background:${PIE_COLORS[i]}"></div><span class="pie-legend-name">${l}</span><span class="pie-legend-pct">${piePcts[i].toFixed(1)}%</span></div>`
+).join('');
+
+// ---- PANEL 1: MES CERRADO ----
+const lastPic = {
+  'DESCARTABLES':8.3,'LIMPIEZA':4.3,'PASTELERIA':4.2,'LACTEOS':4.8,'SEMIELABORADOS':4.0,
+  'PESCA':1.4,'QUESOS Y FIAMBRES':2.1,'BEBIDAS':-2.1,'MARKET':1.2,'PANADERIA':0.0,
+  'VAJILLA':0.0,'VERDULERIA':-2.5,'AVICOLA':0.1,'CARNES':-0.2,'ALMACEN':-0.5,'CAFETERIA':-0.1
+};
+const lastSorted = Object.entries(lastPic).sort((a,b)=>b[1]-a[1]);
+const catsAlza = lastSorted.filter(x=>x[1]>0).length;
+const catsBaja = lastSorted.filter(x=>x[1]<0).length;
+
+// KPI acum 2025, 2026
+const acum2025 = PIC_TOTAL.slice(0,11).reduce((a,b)=>a+b,0).toFixed(2);
+const acum2026 = PIC_TOTAL.slice(11).reduce((a,b)=>a+b,0).toFixed(2);
+
+document.getElementById('kpi-mes').innerHTML = `
+  <div class="kpi highlight"><div class="kpi-label">PIC del período</div><div class="kpi-value" style="color:#fff">+0.79%</div><div class="kpi-sub">Mar → Abr 2026</div></div>
+  <div class="kpi accent"><div class="kpi-label">Acum. últimos 12m</div><div class="kpi-value">+${ACUM12}%</div><div class="kpi-sub">Abr 2025 → Abr 2026</div></div>
+  <div class="kpi"><div class="kpi-label">Categorías al alza</div><div class="kpi-value warn-val">${catsAlza} de 16</div><div class="kpi-sub">con PIC positivo</div></div>
+  <div class="kpi"><div class="kpi-label">Mayor alza</div><div class="kpi-value neg-val">+8.3%</div><div class="kpi-sub">DESCARTABLES</div></div>
+  <div class="kpi"><div class="kpi-label">Mayor baja</div><div class="kpi-value pos-val">−2.5%</div><div class="kpi-sub">VERDULERIA</div></div>
+  <div class="kpi"><div class="kpi-label">Acum. 2026 (4m)</div><div class="kpi-value warn-val">+${acum2026}%</div><div class="kpi-sub">Dic 25 → Abr 26</div></div>
+`;
+
+new Chart(document.getElementById('c-catmes'),{
+  type:'bar',
+  data:{ labels:lastSorted.map(x=>x[0]),
+    datasets:[{label:'PIC',data:lastSorted.map(x=>x[1]),
+      backgroundColor:lastSorted.map(x=>x[1]>3?'rgba(162,45,45,0.8)':x[1]>0?'rgba(26,106,176,0.7)':x[1]<0?'rgba(59,109,17,0.75)':'rgba(136,135,128,0.4)'),
+      borderRadius:3}]},
+  options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.x.toFixed(1)+'%'}}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11},callback:v=>v+'%'}},y:{grid:{display:false},ticks:{color:TC,font:{size:11}}}}}
+});
+
+// ---- PANEL 2: HISTÓRICO ----
+new Chart(document.getElementById('c-hist'),{
+  type:'bar',
+  data:{ labels:PERIODS.map((p,i)=>p+' '+PERYEARS[i]),
+    datasets:[{label:'PIC',data:PIC_TOTAL,
+      backgroundColor:PIC_TOTAL.map(v=>v>=0?'rgba(26,106,176,0.75)':'rgba(162,45,45,0.75)'),borderRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.y.toFixed(2)+'%'}}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:10},maxRotation:45,autoSkip:false}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11},callback:v=>v+'%'}}}}
+});
+
+new Chart(document.getElementById('c-anual'),{
+  type:'bar',
+  data:{ labels:['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10','P11'],
+    datasets:[
+      {label:'2025',data:PIC_TOTAL.slice(0,11),backgroundColor:'rgba(26,106,176,0.75)',borderRadius:3},
+      {label:'2026',data:[...PIC_TOTAL.slice(11),null,null,null,null,null,null,null],backgroundColor:'rgba(216,90,48,0.75)',borderRadius:3}
+    ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y!=null?c.parsed.y.toFixed(2)+'%':'N/D')}}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11}}},y:{grid:{color:GC},ticks:{color:TC,font:{size:11},callback:v=>v+'%'}}}}
+});
+
+const acumTotal = PIC_TOTAL.reduce((a,b)=>a+b,0).toFixed(2);
+document.getElementById('acum-boxes').innerHTML = `
+  <div style="padding:14px 16px;background:#f7f6f3;border:1px solid #e2e0d8;border-radius:8px">
+    <div style="font-size:11px;color:#9e9c94;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Acumulado 2025 (11 períodos)</div>
+    <div style="font-size:24px;font-weight:600;color:#1a1916">+${acum2025}%</div>
+  </div>
+  <div style="padding:14px 16px;background:#f7f6f3;border:1px solid #e2e0d8;border-radius:8px">
+    <div style="font-size:11px;color:#9e9c94;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Acumulado 2026 (4 períodos)</div>
+    <div style="font-size:24px;font-weight:600;color:#7a4a0a">+${acum2026}%</div>
+  </div>
+  <div style="padding:14px 16px;background:#1a1916;border-radius:8px">
+    <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Acumulado total (15 períodos)</div>
+    <div style="font-size:24px;font-weight:600;color:#ffffff">+${acumTotal}%</div>
+  </div>
+`;
+
+// ---- PANEL 3: CATEGORÍAS ----
+const periodPills = document.getElementById('period-pills');
+PERIODS.forEach((p,i)=>{
+  const btn = document.createElement('button');
+  btn.className='pill'+(i===14?' active':'');
+  btn.textContent=p+' '+PERYEARS[i];
+  btn.dataset.idx=i;
+  periodPills.appendChild(btn);
+});
+let catChart=null;
+function renderCatPeriod(idx){
+  const pairs=CATS.map(c=>({cat:c,val:CAT_PIC[c][idx]})).filter(x=>x.val!=null).sort((a,b)=>b.val-a.val);
+  if(catChart) catChart.destroy();
+  catChart=new Chart(document.getElementById('c-catperiod'),{
+    type:'bar',
+    data:{labels:pairs.map(p=>p.cat),datasets:[{label:'PIC',data:pairs.map(p=>p.val),
+      backgroundColor:pairs.map(p=>p.val>0?'rgba(26,106,176,0.75)':p.val<0?'rgba(162,45,45,0.75)':'rgba(136,135,128,0.4)'),borderRadius:3}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.x.toFixed(1)+'%'}}},
+      scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11},callback:v=>v+'%'}},y:{grid:{display:false},ticks:{color:TC,font:{size:11}}}}}
+  });
+}
+renderCatPeriod(14);
+periodPills.querySelectorAll('.pill').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    periodPills.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCatPeriod(parseInt(btn.dataset.idx));
+  });
+});
+
+// HEATMAP
+function heatColor(v){ if(v===null) return '#eee'; if(v>8) return '#922020'; if(v>4) return '#d85a30'; if(v>1.5) return '#f0b060'; if(v>0) return '#c5dea0'; if(v===0) return '#e8e6e0'; if(v>-3) return '#7ed4b8'; return '#1D9E75'; }
+function heatTxt(v){ return (v!==null&&Math.abs(v)>3)?'#fff':'#444'; }
+const hp=['E→F','F→M','M→A','A→M','M→J','J→J','J→A','A→S','S→O','O→N','N→D','D→E','E→F','F→M','M→A'];
+let hh='<div class="heat-headers">'+hp.map(p=>`<div class="heat-hcell">${p}</div>`).join('')+'</div>';
+CATS.forEach(cat=>{
+  hh+=`<div class="heat-row"><div class="heat-label">${cat}</div>`;
+  CAT_PIC[cat].forEach(v=>{ hh+=`<div class="heat-cell" style="background:${heatColor(v)};color:${heatTxt(v)}">${v!==null?v.toFixed(1):''}</div>`; });
+  hh+='</div>';
+});
+document.getElementById('heatmap').innerHTML=hh;
+
+// ---- PANEL 4: DIAGNÓSTICO ----
+function stdDev(arr){ const m=arr.reduce((a,b)=>a+b,0)/arr.length; return Math.sqrt(arr.reduce((a,b)=>a+(b-m)**2,0)/arr.length); }
+const volData=CATS.map(c=>({cat:c,std:parseFloat(stdDev(CAT_PIC[c]).toFixed(2))})).sort((a,b)=>b.std-a.std);
+const maxStd=volData[0].std;
+new Chart(document.getElementById('c-vol'),{
+  type:'bar',
+  data:{labels:volData.map(d=>d.cat),datasets:[{label:'σ',data:volData.map(d=>d.std),
+    backgroundColor:volData.map(d=>d.std>maxStd*0.66?'rgba(162,45,45,0.75)':d.std>maxStd*0.33?'rgba(186,117,23,0.75)':'rgba(26,106,176,0.65)'),borderRadius:3}]},
+  options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' σ = '+c.parsed.x.toFixed(2)+'%'}}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11},callback:v=>v+'%'}},y:{grid:{display:false},ticks:{color:TC,font:{size:10}}}}}
+});
+
+const acumData=CATS.map(c=>({cat:c,acum:parseFloat(CAT_PIC[c].reduce((a,b)=>a+b,0).toFixed(1))})).sort((a,b)=>b.acum-a.acum);
+new Chart(document.getElementById('c-acum'),{
+  type:'bar',
+  data:{labels:acumData.map(d=>d.cat),datasets:[{label:'Acum.',data:acumData.map(d=>d.acum),
+    backgroundColor:acumData.map(d=>d.acum>=0?'rgba(26,106,176,0.75)':'rgba(162,45,45,0.75)'),borderRadius:3}]},
+  options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.x.toFixed(1)+'%'}}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:11},callback:v=>v+'%'}},y:{grid:{display:false},ticks:{color:TC,font:{size:10}}}}}
+});
+
+const consistRows=CATS.map(c=>{
+  const vals=CAT_PIC[c];
+  const pos=vals.filter(v=>v>0).length, neg=vals.filter(v=>v<0).length, neu=vals.filter(v=>v===0).length;
+  const acum=vals.reduce((a,b)=>a+b,0).toFixed(1);
+  const perfil=pos>=11?'Inflacionaria':neg>=6?'Deflacionaria':pos>=8?'Lev. inflacionaria':'Mixta';
+  const bc=pos>=11?'warn':neg>=6?'neg':pos>=8?'pos':'neu';
+  return `<tr><td>${c}</td><td style="text-align:center"><span class="badge pos">${pos}</span></td><td style="text-align:center"><span class="badge neg">${neg}</span></td><td style="text-align:center"><span class="badge neu">${neu}</span></td><td style="text-align:center;font-family:'SF Mono','Fira Code','Consolas','Courier New',monospace">${acum}%</td><td><span class="badge ${bc}">${perfil}</span></td></tr>`;
+}).join('');
+document.getElementById('tbl-consist').innerHTML=`<table class="pic-table"><thead><tr><th>Categoría</th><th style="text-align:center">Períodos ↑</th><th style="text-align:center">Períodos ↓</th><th style="text-align:center">Neutros</th><th style="text-align:center">Acumulado</th><th>Perfil</th></tr></thead><tbody>${consistRows}</tbody></table>`;
+
+// NAV
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.panel).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
